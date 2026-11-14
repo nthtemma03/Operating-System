@@ -1,0 +1,273 @@
+PROGRAMMING ASSIGNMENT 4 REPORT 
+ 
+QUESTION 2: READERS AND WRITERS SYNCHRONIZATION WITH A SEVEN 
+READER 
+LIMIT 
+ 
+1.  OBJECTIVE 
+ 
+The objective of this program is to implement a process synchronization 
+system using multiple reader and writer processes. The system allows a 
+maximum of seven readers to access a shared document simultaneously 
+while ensuring that writers have exclusive access when updating the 
+document. 
+ 
+The program also supports writer notifications, reading deadlines, and 
+forced termination of readers who do not finish before the specified 
+deadline. 
+ 
+2.  SOLUTION APPROACH 
+ 
+The program uses separate processes for readers and writers. Shared 
+memory, semaphores, and pipes are used to coordinate access and 
+communication between processes. 
+ 
+The main components are: 
+ 
+-   Shared memory: Stores the number of active readers and writers, 
+    reader process IDs, and the current deadline. 
+-   Semaphores: Control access to shared data, limit the number of 
+    readers, and ensure exclusive document access. 
+-   Pipes: Allow writers to send access requests to the parent process 
+    and allow the parent to notify readers and grant writing permission. 
+-   Signals: Allow the parent process to forcibly terminate readers that 
+    exceed their deadline. 
+ 
+Four semaphores are used: 
+ 
+1.  mutex: Protects shared data from simultaneous modification. 
+ 
+2.  document_lock: Ensures that writers have exclusive access and that 
+    readers collectively hold access to the document. 
+ 
+3.  reader_slots: Limits the number of concurrent readers to seven. 
+ 
+4.  writer_gate: Prevents new readers from entering while a writer is 
+    waiting. 
+ 
+5.  PROCESS SYNCHRONIZATION ALGORITHM 
+ 
+Reader Process 
+ 
+1.  A reader waits for an available reader slot. 
+2.  The reader checks whether a writer is waiting. 
+3.  If no writer is waiting, the reader registers as an active reader. 
+4.  The reader accesses the document for the specified reading duration. 
+5.  The reader periodically checks its notification pipe for a writer’s 
+    request. 
+6.  If a notification is received, the reader updates its deadline. 
+7.  If the time limit is zero, the reader immediately stops reading. 
+8.  After finishing, the reader releases its claim on the document and 
+    frees its reader slot. 
+ 
+Writer Process 
+ 
+1.  A writer registers its request by increasing the number of waiting 
+    writers. 
+ 
+2.  The writer sends its request and time limit to the parent process 
+    through a pipe. 
+ 
+3.  The parent notifies all active readers and gives them the specified 
+    time to finish. 
+ 
+4.  The parent waits for readers to finish before granting access. 
+ 
+5.  If readers exceed the deadline, the parent forcibly terminates them 
+    and releases their document claims. 
+ 
+6.  The writer receives permission and obtains exclusive access to the 
+    document. 
+ 
+7.  After updating the document, the writer releases the document lock 
+    so other processes can access it. 
+ 
+8.  COMPILATION AND EXECUTION 
+ 
+The source code is saved as Q2_RW.c. 
+ 
+To compile the program on macOS: 
+ 
+gcc Q2_RW.c -o readers_writers 
+ 
+To execute: 
+ 
+./readers_writers 
+ 
+The program automatically creates ten reader processes and two writer 
+processes. 
+ 
+5.  TESTING AND RESULTS 
+ 
+Test Case 1: Normal Reading Deadline 
+ 
+The writer time limit is set to three seconds. 
+ 
+Expected behavior: 
+ 
+-   Up to seven readers access the document simultaneously. 
+-   When a writer requests access, all active readers receive a 
+    notification. 
+-   Readers receive three seconds to finish reading. 
+-   Readers that finish within the deadline release their document 
+    access. 
+-   The writer begins writing after all readers have stopped. 
+-   The two writers update the document sequentially without 
+    overlapping. 
+ 
+The test demonstrated that readers received advance notice, completed 
+their reading, and allowed the writers to obtain exclusive access. 
+ 
+Test Case 2: Immediate Writer Request 
+ 
+The writer time limit is changed to zero. 
+ 
+Expected behavior: 
+ 
+-   Active readers receive an immediate stop notification. 
+-   Readers stop reading and release their document access. 
+-   Any reader that does not stop immediately is forcibly terminated by 
+    the parent process. 
+-   The writer begins writing only after the active reader claims have 
+    been released. 
+ 
+The test demonstrated that readers who did not stop within the immediate 
+request were terminated and that the writers obtained exclusive access 
+afterward. 
+ 
+6.  CONCLUSION 
+ 
+The program implements a readers and writers synchronization system 
+using separate processes, shared memory, semaphores, pipes, and signals. 
+It limits concurrent readers to seven, prevents simultaneous reading and 
+writing, and supports both normal and immediate writer requests. 
+ 
+The two test cases demonstrate that the program can notify readers, 
+enforce deadlines, terminate remaining readers when necessary, and 
+provide writers with exclusive document access. 
+ 
+QUESTION 3: DEADLOCK DETECTION USING A RESOURCE ALLOCATION GRAPH 
+ 
+1.  OBJECTIVE 
+ 
+The objective of this program is to determine whether a resource 
+allocation graph represents a deadlock state. The program reads the 
+adjacency matrix from a text file, extracts the resource request and 
+allocation information, and applies the deadlock detection algorithm to 
+identify processes that cannot finish. 
+ 
+2.  SOLUTION APPROACH 
+ 
+The program reads the number of processes and resource types from the 
+input file. It then reads the adjacency matrix, which has a size of 
+(P+R) x (P+R), where P represents the number of processes and R 
+represents the number of resource types. 
+ 
+The matrix is divided into four sections: 
+ 
+-   Upper left: Process identity entries. 
+-   Upper right: Resource request information. 
+-   Lower left: Resource allocation information. 
+-   Lower right: Available resource instances, represented by the 
+    diagonal entries. 
+ 
+The program extracts the request and allocation matrices. It also 
+calculates the total number of instances of each resource by adding the 
+allocated and available instances. 
+ 
+3.  DEADLOCK DETECTION ALGORITHM 
+ 
+The program uses the deadlock detection algorithm discussed in class. 
+ 
+1.  Initialize the Work array with the available number of resource 
+    instances. 
+ 
+2.  Initialize the Finish array. Processes that do not hold any 
+    resources are marked as finished. 
+ 
+3.  Find an unfinished process whose outstanding resource requests are 
+    less than or equal to the available resources in Work. 
+ 
+4.  If such a process is found, assume it finishes and releases its 
+    allocated resources. 
+ 
+5.  Add the released resources to Work and mark the process as finished. 
+ 
+6.  Repeat the process until no more processes can finish. 
+ 
+7.  If all processes are marked as finished, no deadlock exists. 
+    Otherwise, the unfinished processes are identified as deadlocked 
+    processes. 
+ 
+8.  COMPILATION AND EXECUTION 
+ 
+The source code is saved as Q3_Deadlock.c. 
+ 
+To compile: 
+ 
+gcc Q3_Deadlock.c -o deadlock 
+ 
+To execute: 
+ 
+./deadlock graph.txt 
+ 
+The program accepts the input filename as a command line argument, 
+allowing it to process different input files that follow the specified 
+format. 
+ 
+5.  TESTING AND RESULTS 
+ 
+Test Case 1: Deadlock Detected 
+ 
+Input: 
+ 
+2 2 2 * 2 Matrix 0 0 1 0 0 0 0 1 1 0 0 0 0 1 0 0 
+ 
+Expected result: 
+ 
+Deadlock detected. Deadlocked processes: P1 P2 
+ 
+Explanation: 
+ 
+P1 holds R1 and requests R1, while P2 holds R2 and requests R2. Neither 
+resource is available, so neither process can finish and release its 
+allocated resources. Therefore, the system is in a deadlock state. 
+ 
+Test Case 2: No Deadlock Detected 
+ 
+Input: 
+ 
+3 3 3 * 3 Matrix 1 0 0 0 1 0 0 1 0 1 0 1 0 0 1 0 0 0 1 0 1 1 0 1 0 1 0 0 
+1 0 0 0 1 0 0 1 
+ 
+Expected result: 
+ 
+No deadlock detected. Safe completion sequence: P1 -> P2 -> P3 
+ 
+Explanation: 
+ 
+P1 can finish using the available resources and release its allocated 
+resources. P2 can then finish, followed by P3. Since all processes can 
+complete, the system is not in a deadlock state. 
+ 
+6.  CONCLUSION 
+ 
+The program successfully reads the resource allocation graph from a text 
+file and applies the deadlock detection algorithm. Testing with two 
+different input files demonstrates that the program can identify both 
+deadlock and non deadlock states. It also displays the processes 
+involved in a deadlock or a possible completion sequence when no 
+deadlock exists. 
+ 
+FINAL SUBMISSION NOTES 
+ 
+For Question 2, include terminal screenshots showing the three second 
+deadline test and the zero second deadline test. 
+ 
+For Question 3, include screenshots of both input cases and their 
+outputs. 
+ 
+Important: The Question 3 explanation assumes that the diagonal entries 
+of the lower right matrix block represent available resource instances. 
+Confirm that this convention matches the professor’s intended input 
+format before submitting
